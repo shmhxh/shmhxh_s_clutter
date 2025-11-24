@@ -20,7 +20,7 @@ jobs:
             python-version: '3.8'
             architecture: 'x64'
           - os: macos-latest
-            python-version: '3.8'
+            python-version: '3.9'
             architecture: 'x64'
     
     steps:
@@ -37,24 +37,24 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         # 卸载可能冲突的Python版本
-        brew uninstall --ignore-dependencies python@3.8 || true
+        brew uninstall --ignore-dependencies python@3.9 || true
         brew uninstall --ignore-dependencies python || true
         
         # 安装依赖
         brew install gettext
         
-        # 安装Python 3.8并确保链接
-        brew install python@3.8
-        brew link --overwrite python@3.8
+        # 安装Python 3.9并确保链接
+        brew install python@3.9
+        brew link --overwrite python@3.9
         
         # 直接在当前shell中设置环境变量
-        export PATH="/usr/local/opt/python@3.8/bin:$PATH"
+        export PATH="/usr/local/opt/python@3.9/bin:$PATH"
         export LDFLAGS="-L/usr/local/opt/gettext/lib"
         export CPPFLAGS="-I/usr/local/opt/gettext/include"
         
         # 立即安装pip
-        /usr/local/opt/python@3.8/bin/python3 -m ensurepip
-        /usr/local/opt/python@3.8/bin/python3 -m pip install --upgrade pip
+        /usr/local/opt/python@3.9/bin/python3 -m ensurepip
+        /usr/local/opt/python@3.9/bin/python3 -m pip install --upgrade pip
       shell: bash
     
     - name: Install dependencies for Windows/Linux
@@ -69,8 +69,8 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         # 直接使用brew安装的Python路径
-        PYTHON_PATH="/usr/local/opt/python@3.8/bin/python3"
-        PIP_PATH="/usr/local/opt/python@3.8/bin/pip3"
+        PYTHON_PATH="/usr/local/opt/python@3.9/bin/python3"
+        PIP_PATH="/usr/local/opt/python@3.9/bin/pip3"
         
         # 确保pip是最新版本
         $PYTHON_PATH -m pip install --upgrade pip
@@ -100,9 +100,9 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         # 使用brew安装的Python和PyInstaller
-        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
-        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
-        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name minimal_gui minimal_gui.py
+        /usr/local/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
+        /usr/local/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
+        /usr/local/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name minimal_gui minimal_gui.py
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
