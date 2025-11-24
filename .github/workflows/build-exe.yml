@@ -32,11 +32,29 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
     
+    - name: Install macOS dependencies
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install gettext
+        # 安装兼容的Python版本，避免依赖问题
+        brew install python@3.8
+        echo 'export PATH="/usr/local/opt/python@3.8/bin:$PATH"' >> ~/.bashrc
+        echo 'export LDFLAGS="-L/usr/local/opt/gettext/lib"' >> ~/.bashrc
+        echo 'export CPPFLAGS="-I/usr/local/opt/gettext/include"' >> ~/.bashrc
+      shell: bash
+    
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
-        if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+        # 在macOS上使用brew安装的Python
+        if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          /usr/local/opt/python@3.8/bin/python3 -m pip install --upgrade pip
+          /usr/local/opt/python@3.8/bin/pip3 install pyinstaller
+          if [ -f python_toolbox/requirements.txt ]; then /usr/local/opt/python@3.8/bin/pip3 install -r python_toolbox/requirements.txt; fi
+        else
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+        fi
       shell: bash
         
     - name: Build for Windows
@@ -56,9 +74,10 @@ jobs:
     - name: Build for macOS
       if: matrix.os == 'macos-latest'
       run: |
-        pyinstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
-        pyinstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
-        pyinstaller --onefile --windowed --name minimal_gui minimal_gui.py
+        # 使用brew安装的Python和PyInstaller
+        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
+        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
+        /usr/local/opt/python@3.8/bin/python3 -m PyInstaller --onefile --windowed --name minimal_gui minimal_gui.py
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
