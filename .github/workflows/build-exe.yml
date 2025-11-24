@@ -36,8 +36,9 @@ jobs:
     - name: Install and set up Python for macOS
       if: matrix.os == 'macos-latest'
       run: |
-        # 安装依赖
+        # 安装必要的依赖
         brew install gettext
+        brew install qt5
         
         # 安装Python 3.9并确保链接
         brew install python@3.9
@@ -45,12 +46,18 @@ jobs:
         
         # 直接在当前shell中设置环境变量（使用正确的Homebrew路径）
         export PATH="/opt/homebrew/opt/python@3.9/bin:$PATH"
-        export LDFLAGS="-L/opt/homebrew/opt/gettext/lib"
-        export CPPFLAGS="-I/opt/homebrew/opt/gettext/include"
+        export LDFLAGS="-L/opt/homebrew/opt/gettext/lib -L/opt/homebrew/opt/qt5/lib"
+        export CPPFLAGS="-I/opt/homebrew/opt/gettext/include -I/opt/homebrew/opt/qt5/include"
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/qt5/lib/pkgconfig"
         
         # 立即安装pip
         /opt/homebrew/opt/python@3.9/bin/python3 -m ensurepip
         /opt/homebrew/opt/python@3.9/bin/python3 -m pip install --upgrade pip
+        
+        # 显示安装的Python和Qt版本
+        /opt/homebrew/opt/python@3.9/bin/python3 --version
+        which qmake
+        qmake --version
       shell: bash
     
     - name: Install dependencies for Windows/Linux
@@ -95,10 +102,23 @@ jobs:
     - name: Build for macOS
       if: matrix.os == 'macos-latest'
       run: |
-        # 使用brew安装的Python和PyInstaller
-        /opt/homebrew/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
-        /opt/homebrew/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
-        /opt/homebrew/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name minimal_gui minimal_gui.py
+        # 使用brew安装的Python和PyInstaller，并增加详细输出
+        echo "Current PATH: $PATH"
+        echo "Python path: $(which python3)"
+        echo "PyInstaller path: $(/opt/homebrew/opt/python@3.9/bin/python3 -m pip show pyinstaller | grep Location)"
+        
+        # 设置环境变量
+        export PATH="/opt/homebrew/opt/python@3.9/bin:$PATH"
+        export LDFLAGS="-L/opt/homebrew/opt/gettext/lib -L/opt/homebrew/opt/qt5/lib"
+        export CPPFLAGS="-I/opt/homebrew/opt/gettext/include -I/opt/homebrew/opt/qt5/include"
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/qt5/lib/pkgconfig"
+        
+        # 尝试构建第一个应用
+        echo "Building python_toolbox_gui..."
+        /opt/homebrew/opt/python@3.9/bin/python3 -m PyInstaller --onefile --windowed --name python_toolbox_gui --debug=all python_toolbox_gui.py || echo "Build failed for python_toolbox_gui"
+        
+        # 显示构建目录内容
+        ls -la dist/ || echo "Dist directory not found"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
