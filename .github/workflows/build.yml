@@ -165,9 +165,29 @@ jobs:
         ls -la artifacts/ || echo "Artifacts directory not found"
         find artifacts/ -type f || echo "No files found in artifacts"
     
-    - name: Create Release
+    - name: Create Release from tag
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
+        files: |
+          artifacts/python-toolbox-windows-latest/python_toolbox_gui.exe
+          artifacts/python-toolbox-windows-latest/simple_gui_fixed.exe
+          artifacts/python-toolbox-windows-latest/minimal_gui.exe
+          artifacts/python-toolbox-ubuntu-latest/python_toolbox_gui
+          artifacts/python-toolbox-ubuntu-latest/simple_gui_fixed
+          artifacts/python-toolbox-ubuntu-latest/minimal_gui
+          # artifacts/python-toolbox-macos-latest/python_toolbox_gui
+          # artifacts/python-toolbox-macos-latest/simple_gui_fixed
+          # artifacts/python-toolbox-macos-latest/minimal_gui
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create Release from main branch
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Latest Development Build
         files: |
           artifacts/python-toolbox-windows-latest/python_toolbox_gui.exe
           artifacts/python-toolbox-windows-latest/simple_gui_fixed.exe
