@@ -1,5 +1,8 @@
 name: Build Python Applications
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
