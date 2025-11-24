@@ -16,17 +16,29 @@
 ## 目录结构
 
 ```
-python_toolbox/
-├── main.py              # 主程序入口
-├── tools/               # 工具模块目录
-│   ├── file_tools/      # 文件操作工具
-│   ├── text_tools/      # 文本处理工具
-│   ├── network_tools/   # 网络相关工具
-│   ├── system_tools/    # 系统工具
-│   └── image_tools/     # 图像处理工具
-├── config/              # 配置相关
-│   └── config.py        # 配置管理模块
-└── docs/                # 文档目录
+shmhxh_s_clutter/
+├── python_toolbox/      # 核心工具库目录
+│   ├── main.py          # 主程序入口
+│   ├── tools/           # 工具模块目录
+│   │   ├── file_tools/  # 文件操作工具
+│   │   ├── text_tools/  # 文本处理工具
+│   │   ├── network_tools/ # 网络相关工具
+│   │   ├── system_tools/  # 系统工具
+│   │   └── image_tools/   # 图像处理工具
+│   ├── config/          # 配置相关
+│   │   └── config.py    # 配置管理模块
+│   └── docs/            # 文档目录
+├── tests/               # 测试文件目录
+│   ├── comprehensive_test.py      # 综合测试脚本
+│   ├── simple_gui_test.py         # 简化版GUI测试
+│   ├── test_gui_tool_display.py   # GUI工具显示测试
+│   └── test_tool_loading.py       # 工具加载测试
+├── python_toolbox_gui.py  # 完整版GUI程序
+├── simple_gui_fixed.py    # 简化版GUI程序
+├── minimal_gui.py         # 极简版GUI程序
+├── fix_null_bytes.py      # 修复空字节工具
+├── README.md              # 项目说明文档
+└── .gitignore             # Git忽略文件
 ```
 
 ## 安装说明
@@ -78,6 +90,34 @@ python main.py --tool category.tool_name
 例如：
 ```bash
 python main.py --tool file_tools.file_info
+```
+
+### GUI模式
+
+本项目提供了三种不同版本的GUI程序，您可以根据需要选择使用：
+
+#### 完整版GUI程序
+
+功能最完善的GUI版本，提供了完整的工具分类和搜索功能：
+
+```bash
+python python_toolbox_gui.py
+```
+
+#### 简化版GUI程序
+
+功能简化但使用更轻量的GUI版本：
+
+```bash
+python simple_gui_fixed.py
+```
+
+#### 极简版GUI程序
+
+仅包含最基本功能的极简GUI版本：
+
+```bash
+python minimal_gui.py
 ```
 
 ## 工具列表
