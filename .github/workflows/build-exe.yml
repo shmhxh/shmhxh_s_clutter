@@ -1,0 +1,169 @@
+name: Build Python Applications
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            python-version: '3.8'
+            architecture: 'x86'
+          - os: ubuntu-latest
+            python-version: '3.8'
+            architecture: 'x64'
+          - os: macos-latest
+            python-version: '3.9'
+            architecture: 'x64'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python for Windows/Linux
+      if: matrix.os != 'macos-latest'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    
+    - name: Install and set up Python for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 安装必要的依赖
+        brew install gettext
+        brew install qt5
+        
+        # 安装Python 3.9并确保链接
+        brew install python@3.9
+        brew link --overwrite python@3.9
+        
+        # 查看Homebrew安装的Python实际路径
+        echo "Python Cellar path: $(brew --cellar python@3.9)/$(brew list --versions python@3.9 | cut -d ' ' -f 2)"
+        ls -la /opt/homebrew/opt/python@3.9/bin/ || echo "No such directory"
+        ls -la /opt/homebrew/bin/python3* || echo "No Python in /opt/homebrew/bin"
+        
+        # 设置环境变量
+        export PATH="/opt/homebrew/bin:$PATH"
+        export LDFLAGS="-L/opt/homebrew/opt/gettext/lib -L/opt/homebrew/opt/qt5/lib"
+        export CPPFLAGS="-I/opt/homebrew/opt/gettext/include -I/opt/homebrew/opt/qt5/include"
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/qt5/lib/pkgconfig"
+        
+        # 使用正确的Python路径（通过which获取）
+        PYTHON3=$(which python3)
+        echo "Using Python: $PYTHON3"
+        
+        # 立即安装pip
+        $PYTHON3 -m ensurepip
+        $PYTHON3 -m pip install --upgrade pip
+        
+        # 显示安装的Python和Qt版本
+        $PYTHON3 --version
+        which qmake
+        qmake --version
+      shell: bash
+    
+    - name: Install dependencies for Windows/Linux
+      if: matrix.os != 'macos-latest'
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+      shell: bash
+    
+    - name: Install dependencies for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 使用which获取正确的Python路径
+        PYTHON3=$(which python3)
+        PIP3=$(which pip3)
+        
+        echo "Using Python: $PYTHON3"
+        echo "Using pip: $PIP3"
+        
+        # 确保pip是最新版本
+        $PYTHON3 -m pip install --upgrade pip
+        
+        # 安装PyInstaller
+        $PYTHON3 -m pip install pyinstaller
+        
+        # 安装项目依赖
+        if [ -f python_toolbox/requirements.txt ]; then $PYTHON3 -m pip install -r python_toolbox/requirements.txt; fi
+      shell: bash
+        
+    - name: Build for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
+        pyinstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
+        pyinstaller --onefile --windowed --name minimal_gui minimal_gui.py
+    
+    - name: Build for Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        pyinstaller --onefile --name python_toolbox_gui python_toolbox_gui.py
+        pyinstaller --onefile --name simple_gui_fixed simple_gui_fixed.py
+        pyinstaller --onefile --name minimal_gui minimal_gui.py
+    
+    - name: Build for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 使用which获取正确的Python路径
+        PYTHON3=$(which python3)
+        echo "Current PATH: $PATH"
+        echo "Python path: $PYTHON3"
+        echo "PyInstaller path: $($PYTHON3 -m pip show pyinstaller | grep Location)"
+        
+        # 设置环境变量
+        export PATH="/opt/homebrew/bin:$PATH"
+        export LDFLAGS="-L/opt/homebrew/opt/gettext/lib -L/opt/homebrew/opt/qt5/lib"
+        export CPPFLAGS="-I/opt/homebrew/opt/gettext/include -I/opt/homebrew/opt/qt5/include"
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/qt5/lib/pkgconfig"
+        
+        # 尝试构建第一个应用
+        echo "Building python_toolbox_gui..."
+        $PYTHON3 -m PyInstaller --onefile --windowed --name python_toolbox_gui --debug=all python_toolbox_gui.py || echo "Build failed for python_toolbox_gui"
+        
+        # 显示构建目录内容
+        ls -la dist/ || echo "Dist directory not found"
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-toolbox-${{ matrix.os }}
+        path: |
+          dist/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifacts/python-toolbox-windows-latest/python_toolbox_gui.exe
+          artifacts/python-toolbox-windows-latest/simple_gui_fixed.exe
+          artifacts/python-toolbox-windows-latest/minimal_gui.exe
+          artifacts/python-toolbox-ubuntu-latest/python_toolbox_gui
+          artifacts/python-toolbox-ubuntu-latest/simple_gui_fixed
+          artifacts/python-toolbox-ubuntu-latest/minimal_gui
+          artifacts/python-toolbox-macos-latest/python_toolbox_gui
+          artifacts/python-toolbox-macos-latest/simple_gui_fixed
+          artifacts/python-toolbox-macos-latest/minimal_gui
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
