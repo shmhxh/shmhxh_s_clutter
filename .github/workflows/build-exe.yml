@@ -26,35 +26,60 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
+    - name: Set up Python for Windows/Linux
+      if: matrix.os != 'macos-latest'
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
     
-    - name: Install macOS dependencies
+    - name: Install and set up Python for macOS
       if: matrix.os == 'macos-latest'
       run: |
+        # 卸载可能冲突的Python版本
+        brew uninstall --ignore-dependencies python@3.8 || true
+        brew uninstall --ignore-dependencies python || true
+        
+        # 安装依赖
         brew install gettext
-        # 安装兼容的Python版本，避免依赖问题
+        
+        # 安装Python 3.8并确保链接
         brew install python@3.8
-        echo 'export PATH="/usr/local/opt/python@3.8/bin:$PATH"' >> ~/.bashrc
-        echo 'export LDFLAGS="-L/usr/local/opt/gettext/lib"' >> ~/.bashrc
-        echo 'export CPPFLAGS="-I/usr/local/opt/gettext/include"' >> ~/.bashrc
+        brew link --overwrite python@3.8
+        
+        # 直接在当前shell中设置环境变量
+        export PATH="/usr/local/opt/python@3.8/bin:$PATH"
+        export LDFLAGS="-L/usr/local/opt/gettext/lib"
+        export CPPFLAGS="-I/usr/local/opt/gettext/include"
+        
+        # 立即安装pip
+        /usr/local/opt/python@3.8/bin/python3 -m ensurepip
+        /usr/local/opt/python@3.8/bin/python3 -m pip install --upgrade pip
       shell: bash
     
-    - name: Install dependencies
+    - name: Install dependencies for Windows/Linux
+      if: matrix.os != 'macos-latest'
       run: |
-        # 在macOS上使用brew安装的Python
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          /usr/local/opt/python@3.8/bin/python3 -m pip install --upgrade pip
-          /usr/local/opt/python@3.8/bin/pip3 install pyinstaller
-          if [ -f python_toolbox/requirements.txt ]; then /usr/local/opt/python@3.8/bin/pip3 install -r python_toolbox/requirements.txt; fi
-        else
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-          if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
-        fi
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+      shell: bash
+    
+    - name: Install dependencies for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 直接使用brew安装的Python路径
+        PYTHON_PATH="/usr/local/opt/python@3.8/bin/python3"
+        PIP_PATH="/usr/local/opt/python@3.8/bin/pip3"
+        
+        # 确保pip是最新版本
+        $PYTHON_PATH -m pip install --upgrade pip
+        
+        # 安装PyInstaller
+        $PIP_PATH install pyinstaller
+        
+        # 安装项目依赖
+        if [ -f python_toolbox/requirements.txt ]; then $PIP_PATH install -r python_toolbox/requirements.txt; fi
       shell: bash
         
     - name: Build for Windows
