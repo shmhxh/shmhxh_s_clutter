@@ -23,7 +23,15 @@ from python_toolbox.tools.system_tools.console_ui import (
 
 def load_tools():
     """加载所有工具模块，包括系统信息和图像转换工具"""
-    tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
+    # 处理PyInstaller打包后的路径问题
+    if hasattr(sys, '_MEIPASS'):
+        # 打包后运行时使用临时目录
+        base_path = sys._MEIPASS
+        tools_dir = os.path.join(base_path, 'python_toolbox', 'tools')
+    else:
+        # 开发环境下的正常路径
+        tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
+    
     tools = {}
     total_files = 0
     loaded_files = 0
