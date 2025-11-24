@@ -141,19 +141,29 @@ jobs:
           dist/
 
   release:
-    # if: github.ref == 'refs/heads/main'
-    # needs: build
+    if: (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
-    - name: Debug GitHub ref
-      run: echo "Current GitHub ref: ${{ github.ref }}"
+    - name: Debug information
+      run: |
+        echo "Current GitHub ref: ${{ github.ref }}"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
+        echo "Is main branch: ${{ github.ref == 'refs/heads/main' }}"
     
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts/
+    
+    - name: List downloaded artifacts
+      run: |
+        echo "Artifacts directory structure:"
+        ls -la artifacts/ || echo "Artifacts directory not found"
+        find artifacts/ -type f || echo "No files found in artifacts"
     
     - name: Create Release
       uses: softprops/action-gh-release@v2
