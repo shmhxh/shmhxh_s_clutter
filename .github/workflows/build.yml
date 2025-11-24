@@ -147,6 +147,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Debug GitHub ref
+      run: echo "Current GitHub ref: ${{ github.ref }}"
+    
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
