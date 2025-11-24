@@ -1,14 +1,19 @@
-name: Build Python to EXE
+name: Build Python Applications
 
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [ '3.8' ]
     
     steps:
     - uses: actions/checkout@v4
@@ -16,16 +21,32 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.8'
+        python-version: ${{ matrix.python-version }}
         architecture: 'x86'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        if (Test-Path python_toolbox/requirements.txt) { pip install -r python_toolbox/requirements.txt }
+        if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+      shell: bash
         
-    - name: Build EXE files
+    - name: Build for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
+        pyinstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
+        pyinstaller --onefile --windowed --name minimal_gui minimal_gui.py
+    
+    - name: Build for Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        pyinstaller --onefile --name python_toolbox_gui python_toolbox_gui.py
+        pyinstaller --onefile --name simple_gui_fixed simple_gui_fixed.py
+        pyinstaller --onefile --name minimal_gui minimal_gui.py
+    
+    - name: Build for macOS
+      if: matrix.os == 'macos-latest'
       run: |
         pyinstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
         pyinstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
@@ -34,8 +55,34 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: python-toolbox-exes
+        name: python-toolbox-${{ matrix.os }}
         path: |
-          dist/python_toolbox_gui.exe
-          dist/simple_gui_fixed.exe
-          dist/minimal_gui.exe
+          dist/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifacts/python-toolbox-windows-latest/python_toolbox_gui.exe
+          artifacts/python-toolbox-windows-latest/simple_gui_fixed.exe
+          artifacts/python-toolbox-windows-latest/minimal_gui.exe
+          artifacts/python-toolbox-ubuntu-latest/python_toolbox_gui
+          artifacts/python-toolbox-ubuntu-latest/simple_gui_fixed
+          artifacts/python-toolbox-ubuntu-latest/minimal_gui
+          artifacts/python-toolbox-macos-latest/python_toolbox_gui
+          artifacts/python-toolbox-macos-latest/simple_gui_fixed
+          artifacts/python-toolbox-macos-latest/minimal_gui
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
