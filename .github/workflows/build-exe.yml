@@ -1,0 +1,41 @@
+name: Build Python to EXE
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+        architecture: 'x86'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if [ -f python_toolbox/requirements.txt ]; then pip install -r python_toolbox/requirements.txt; fi
+        
+    - name: Build EXE files
+      run: |
+        pyinstaller --onefile --windowed --name python_toolbox_gui python_toolbox_gui.py
+        pyinstaller --onefile --windowed --name simple_gui_fixed simple_gui_fixed.py
+        pyinstaller --onefile --windowed --name minimal_gui minimal_gui.py
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-toolbox-exes
+        path: |
+          dist/python_toolbox_gui.exe
+          dist/simple_gui_fixed.exe
+          dist/minimal_gui.exe
